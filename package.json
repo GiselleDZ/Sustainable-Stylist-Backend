@@ -1,0 +1,31 @@
+{
+  "name": "sustainablestylist-server",
+  "version": "1.0.0",
+  "description": "Backend for Sustainable Stylist AI",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run test",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/GiselleDZ/Sustainable-Stylist-Backend.git"
+  },
+  "author": "Giselle Zatonyl",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/GiselleDZ/Sustainable-Stylist-Backend/issues"
+  },
+  "homepage": "https://github.com/GiselleDZ/Sustainable-Stylist-Backend#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "express-slow-down": "^1.6.0",
+    "helmet": "^6.0.1",
+    "openai": "^3.2.1",
+    "puppeteer": "^19.8.5",
+    "rate-limiter-flexible": "^2.4.1"
+  }
+}
