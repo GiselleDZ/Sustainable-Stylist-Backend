@@ -2,3 +2,4 @@ env-vars.js
 node_modules
 server.cert
 server.key
+.env
