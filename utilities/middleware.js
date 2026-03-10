@@ -31,7 +31,7 @@ const speedLimiter = slowDown({
 // set origin for using cors
 const origin =
   environment === "production"
-    ? "https://sustainablestylist.ai"
+    ? process.env.CORS_ORIGIN || "https://sustainablestylist.ai"
     : "http://localhost:3000";
 
 const corsOptions = {

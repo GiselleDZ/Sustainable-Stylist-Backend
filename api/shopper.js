@@ -9,7 +9,7 @@ router.get("/scrape-depop", async (req, res) => {
 
   try {
     //open url
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
     const page = await browser.newPage();
 
     page.setViewport({ width: 1080, height: 720 });
@@ -48,13 +48,101 @@ router.get("/scrape-depop", async (req, res) => {
       });
       return { elements: els, numOfListings: listItems.length };
     });
-    // set status and element data
-    res.status(200);
-    res.json({ elements, numOfListings });
     //close the browser window
     await browser.close();
+    // set status and element data
+    res.status(200).json({ elements, numOfListings });
   } catch (error) {
-    throw error;
+    console.error("Scraper error:", error.message);
+    res.status(500).json({ error: "Failed to fetch listings. Please try again." });
+  }
+});
+
+// eBay scrape request
+router.get("/scrape-ebay", async (req, res) => {
+  const searchString = req.query.searchstring;
+  const url = `https://www.ebay.com/sch/i.html?_nkw=${searchString}`;
+
+  try {
+    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    const page = await browser.newPage();
+
+    page.setViewport({ width: 1080, height: 720 });
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+
+    await page.waitForSelector("img");
+
+    const { elements, numOfListings } = await page.evaluate(() => {
+      const listItems = document.querySelectorAll("li.s-item");
+      let els = [];
+      listItems.forEach((it) => {
+        const img = it.querySelector("img");
+        const priceEl = it.querySelector(".s-item__price");
+        const linkEl = it.querySelector("a.s-item__link");
+        if (img && priceEl && linkEl) {
+          const image = img.getAttribute("src");
+          if (image && image.length) {
+            els.push({
+              image,
+              alt: img.alt || "",
+              price: priceEl.innerText,
+              link: linkEl.getAttribute("href"),
+            });
+          }
+        }
+      });
+      return { elements: els, numOfListings: listItems.length };
+    });
+
+    await browser.close();
+    res.status(200).json({ elements, numOfListings });
+  } catch (error) {
+    console.error("eBay scraper error:", error.message);
+    res.status(500).json({ error: "Failed to fetch eBay listings. Please try again." });
+  }
+});
+
+// The Real Real scrape request
+router.get("/scrape-realreal", async (req, res) => {
+  const searchString = req.query.searchstring;
+  const url = `https://www.therealreal.com/search?query=${searchString}`;
+
+  try {
+    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    const page = await browser.newPage();
+
+    page.setViewport({ width: 1080, height: 720 });
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+
+    await page.waitForSelector("img");
+
+    const { elements, numOfListings } = await page.evaluate(() => {
+      const listItems = document.querySelectorAll("[data-testid='product-card'], .product-tile, .product-card");
+      let els = [];
+      listItems.forEach((it) => {
+        const img = it.querySelector("img");
+        const priceEl = it.querySelector("[data-testid='price'], .price, .product-price");
+        const linkEl = it.querySelector("a");
+        if (img && linkEl) {
+          const image = img.getAttribute("src");
+          if (image && image.length) {
+            els.push({
+              image,
+              alt: img.alt || "",
+              price: priceEl ? priceEl.innerText : "",
+              link: linkEl.getAttribute("href"),
+            });
+          }
+        }
+      });
+      return { elements: els, numOfListings: listItems.length };
+    });
+
+    await browser.close();
+    res.status(200).json({ elements, numOfListings });
+  } catch (error) {
+    console.error("Real Real scraper error:", error.message);
+    res.status(500).json({ error: "Failed to fetch The Real Real listings. Please try again." });
   }
 });
 

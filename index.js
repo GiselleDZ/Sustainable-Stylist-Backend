@@ -1,4 +1,5 @@
 const fs = require("fs");
+const http = require("http");
 const https = require("https");
 const express = require("express");
 const session = require("express-session");
@@ -37,40 +38,45 @@ app.use(speedLimiter);
 // use expression session cookie options
 app.use(
   session({
-    secret: process.env.SECRET,
+    secret: process.env.SECRET || "dev-secret",
     cookie: {
-      secure: true,
+      secure: environment === "production",
       httpOnly: true,
     },
-    // ... other session options
   })
 );
 
 // use cors
 app.use(cors(corsOptions));
 
-// Read the key and certificate
-let privateKey, certificate;
-if (environment === "production") {
-  privateKey = fs.readFileSync("sustainablestylistai.key", "utf8");
-  certificate = fs.readFileSync("sustainablestylistai.crt", "utf8");
-} else {
-  privateKey = fs.readFileSync("server.key", "utf8");
-  certificate = fs.readFileSync("server.cert", "utf8");
-}
-
-// Create an HTTPS service with the Express app
-const credentials = { key: privateKey, cert: certificate };
-const httpsServer = https.createServer(credentials, app);
-
 // plug routes
 app.use("/stylist", stylistRoutes);
 app.use("/shopper", shopperRoutes);
 
 app.get("/", (req, res) => {
-  res.send("Welcome to my secure server!");
+  res.send("Welcome to Sustainable Stylist API!");
 });
 
-httpsServer.listen(PORT, () => {
-  console.log(`Secure server listening on port ${PORT}`);
-});
+// In production (Railway/Render), TLS is terminated by the platform — run plain HTTP.
+// In development, use HTTPS if local certs exist, otherwise HTTP.
+if (environment === "production") {
+  http.createServer(app).listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+  });
+} else {
+  const keyPath = "server.key";
+  const certPath = "server.cert";
+  if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+    const credentials = {
+      key: fs.readFileSync(keyPath, "utf8"),
+      cert: fs.readFileSync(certPath, "utf8"),
+    };
+    https.createServer(credentials, app).listen(PORT, () => {
+      console.log(`Secure dev server listening on port ${PORT}`);
+    });
+  } else {
+    http.createServer(app).listen(PORT, () => {
+      console.log(`Dev server listening on port ${PORT} (HTTP)`);
+    });
+  }
+}
